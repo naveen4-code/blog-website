@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Naveen's Blog</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+<header class="header">
+  <h1>Naveen's Blog</h1>
+
+  <div class="search-area">
+    <input id="search" type="text" placeholder="Search posts...">
+    <button id="newPostBtn">Write a Blog</button>
+    <button id="reloadBtn">Reload</button>
+  </div>
+</header>
+
+<main>
+  <aside class="sidebar">
+    <h2>Submit a Blog</h2>
+    <form id="postForm">
+      <input type="text" id="postTitle" placeholder="Blog Title" required />
+      <input type="text" id="postAuthor" placeholder="Your Name" required />
+      <textarea id="postContent" placeholder="Blog Content..." required></textarea>
+      <button type="submit">Post</button>
+    </form>
+  </aside>
+
+  <section id="postsContainer"></section>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>

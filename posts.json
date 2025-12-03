@@ -1,0 +1,17 @@
+[
+  {
+    "title": "AI in Healthcare – by Naveen",
+    "author": "Naveen",
+    "content": "AI in Healthcare transforms diagnosis, treatment prediction, and patient monitoring. My project focuses on early disease detection using ML and medical datasets."
+  },
+  {
+    "title": "Geo-Tagged Fish Logger – by Naveen",
+    "author": "Naveen",
+    "content": "A real-time fish catch logging app using GPS, Firebase, and offline caching. Helps fishermen store species, location, and catch details."
+  },
+  {
+    "title": "Mental Health Analyzer – by Naveen",
+    "author": "Naveen",
+    "content": "An AI-powered mental health screening tool that identifies stress, anxiety levels, and wellness insights using NLP and sentiment analysis."
+  }
+]

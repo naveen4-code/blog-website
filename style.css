@@ -1,0 +1,53 @@
+body{
+  margin:0;
+  background:#eef2f6;
+  font-family:Arial;
+}
+
+.header{
+  text-align:center;
+  padding:20px;
+  background:#1a73e8;
+  color:white;
+}
+
+.search-area{
+  margin-top:10px;
+}
+
+#search{
+  padding:8px;
+  width:200px;
+}
+
+#newPostBtn, #reloadBtn{
+  padding:8px 12px;
+  margin-left:5px;
+}
+
+main{
+  display:flex;
+  padding:20px;
+  gap:20px;
+}
+
+.sidebar{
+  width:300px;
+  background:white;
+  padding:15px;
+  border-radius:10px;
+}
+
+#postsContainer{
+  flex:1;
+}
+
+.post{
+  background:white;
+  padding:15px;
+  margin-bottom:20px;
+  border-radius:10px;
+}
+
+.post h2{ margin-top:0; }
+.post small{ color:#666; }
