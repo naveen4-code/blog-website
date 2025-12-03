@@ -1,37 +1,86 @@
-<!DOCTYPE html>
+<!doctype html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Naveen's Blog</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Naveen's Blog — Real-time (Firebase)</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-
 <body>
+  <header class="topbar">
+    <div class="container">
+      <h1>Naveen's Blog</h1>
+      <div class="top-actions">
+        <input id="search" placeholder="Search posts (title, author, content)" />
+        <button id="openPostFormBtn" class="btn">Write a Post</button>
+      </div>
+    </div>
+  </header>
 
-<header class="header">
-  <h1>Naveen's Blog</h1>
+  <main class="container main">
+    <aside class="sidebar">
+      <h2>About</h2>
+      <p>This blog uses Firebase Firestore & Storage. Anyone can submit a post — posts are visible to everyone in real time.</p>
+      <hr />
+      <h3>Quick links</h3>
+      <ul id="navList"></ul>
+    </aside>
 
-  <div class="search-area">
-    <input id="search" type="text" placeholder="Search posts...">
-    <button id="newPostBtn">Write a Blog</button>
-    <button id="reloadBtn">Reload</button>
+```
+<section class="feed">
+  <div id="posts" class="posts">Loading posts…</div>
+</section>
+```
+
+  </main>
+
+  <!-- Post modal / form -->
+
+  <div id="postModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-content">
+      <button id="closeModal" class="close">✕</button>
+      <h2>Write a new post</h2>
+      <form id="postForm">
+        <label>Title <input id="title" required /></label>
+        <label>Author <input id="author" value="Naveen Raj" required /></label>
+        <label>Content <textarea id="content" rows="6" required></textarea></label>
+        <label>Image (optional) <input type="file" id="image" accept="image/*" /></label>
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Publish</button>
+          <button type="button" id="cancelPost" class="btn">Cancel</button>
+        </div>
+      </form>
+    </div>
   </div>
-</header>
 
-<main>
-  <aside class="sidebar">
-    <h2>Submit a Blog</h2>
-    <form id="postForm">
-      <input type="text" id="postTitle" placeholder="Blog Title" required />
-      <input type="text" id="postAuthor" placeholder="Your Name" required />
-      <textarea id="postContent" placeholder="Blog Content..." required></textarea>
-      <button type="submit">Post</button>
-    </form>
-  </aside>
+  <!-- Post detail modal (shows single post + comments) -->
 
-  <section id="postsContainer"></section>
-</main>
+  <div id="postDetailModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-content large">
+      <button id="closeDetail" class="close">✕</button>
+      <article id="postDetail"></article>
+      <section id="commentsSection">
+        <h3>Comments</h3>
+        <form id="commentForm">
+          <input id="commentName" placeholder="Your name" required />
+          <textarea id="commentText" placeholder="Your comment" rows="3" required></textarea>
+          <div class="form-actions">
+            <button type="submit" class="btn primary">Post comment</button>
+          </div>
+        </form>
+        <ul id="commentsList"></ul>
+      </section>
+    </div>
+  </div>
 
-<script src="script.js"></script>
+  <!-- Firebase config (fill your config in firebase-config.js) -->
+
+  <script src="firebase-config.js"></script>
+
+  <!-- Firebase SDK and app logic -->
+
+  <script type="module" src="script.js"></script>
+
 </body>
 </html>
