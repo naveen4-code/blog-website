@@ -4,16 +4,11 @@
     <meta charset="UTF-8">
     <title>Naveen's Blog — Global Real-time Blog</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
-    <!-- HEADER -->
     <header class="header">
         <div class="container header-content">
             <h1 class="logo">Naveen's Blog</h1>
@@ -24,22 +19,15 @@
             </div>
         </div>
     </header>
-
-    <!-- MAIN -->
     <main class="container main">
-        <!-- LEFT SIDEBAR -->
         <aside class="sidebar">
             <h2 class="sidebar-title">All Posts</h2>
             <div id="navList" class="navList"></div>
         </aside>
-
-        <!-- FEED -->
         <section class="feed">
             <div id="posts" class="posts">Loading posts…</div>
         </section>
     </main>
-
-    <!-- CREATE POST MODAL -->
     <div id="postModal" class="modal hidden">
         <div class="modal-content">
             <button id="closePostModal" class="close">✕</button>
@@ -62,8 +50,6 @@
             </form>
         </div>
     </div>
-
-    <!-- POST DETAIL MODAL -->
     <div id="detailModal" class="modal hidden">
         <div class="modal-content large">
             <button id="closeDetail" class="close">✕</button>
@@ -80,8 +66,6 @@
             <ul id="commentsList"></ul>
         </div>
     </div>
-
-    <!-- Firebase -->
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="script.js"></script>
 </body>

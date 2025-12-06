@@ -29,8 +29,6 @@ let currentPostId = null;
 
 const show = el => el.classList.remove("hidden");
 const hide = el => el.classList.add("hidden");
-
-/* -------- Seed initial 3 posts only once -------- */
 async function seedIfNeeded() {
     const metaRef = doc(db, "meta", "seed_v1");
     const snap = await getDoc(metaRef);
@@ -63,8 +61,6 @@ async function seedIfNeeded() {
 
     await setDoc(metaRef, { seededAt: serverTimestamp() });
 }
-
-/* -------- Render Posts -------- */
 function renderPosts(posts) {
     postsEl.innerHTML = "";
     const q = searchInput.value.toLowerCase();
@@ -89,8 +85,6 @@ function renderPosts(posts) {
         postsEl.appendChild(card);
     });
 }
-
-/* -------- Navigation -------- */
 function renderNav(posts) {
     navList.innerHTML = "";
     posts.forEach(p => {
@@ -104,8 +98,6 @@ function renderNav(posts) {
         navList.appendChild(a);
     });
 }
-
-/* -------- Listen to posts realtime -------- */
 function watchPostsRealtime() {
     const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
     onSnapshot(q, snapshot => {
@@ -115,8 +107,6 @@ function watchPostsRealtime() {
         renderNav(arr);
     });
 }
-
-/* -------- Create new post -------- */
 postForm.addEventListener("submit", async e => {
     e.preventDefault();
 
@@ -142,8 +132,6 @@ postForm.addEventListener("submit", async e => {
     hide(postModal);
     postForm.reset();
 });
-
-/* -------- Open Detail Modal -------- */
 async function openDetail(id) {
     currentPostId = id;
 
@@ -162,8 +150,6 @@ async function openDetail(id) {
     loadComments(id);
     show(detailModal);
 }
-
-/* -------- Comments realtime -------- */
 function loadComments(postId) {
     const cm = collection(db, "posts", postId, "comments");
     const q = query(cm, orderBy("createdAt", "asc"));
@@ -178,8 +164,6 @@ function loadComments(postId) {
         });
     });
 }
-
-/* -------- Add new comment -------- */
 commentForm.addEventListener("submit", async e => {
     e.preventDefault();
 
@@ -192,12 +176,8 @@ commentForm.addEventListener("submit", async e => {
 
     commentForm.reset();
 });
-
-/* -------- UI Modal Controls -------- */
 openNewPost.onclick = () => show(postModal);
 closePostModal.onclick = () => hide(postModal);
 closeDetail.onclick = () => hide(detailModal);
-
-/* -------- Start App -------- */
 await seedIfNeeded();
 watchPostsRealtime();
