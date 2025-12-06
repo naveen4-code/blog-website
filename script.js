@@ -1,283 +1,203 @@
-// ...existing code...
-/* script.js — module: uses Firebase Modular SDK (v9+)
-Ensure firebase-config.js exports firebaseConfig as shown above.
-*/
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { app } from "./firebase-config.js";
 import {
-  getFirestore, collection, addDoc, doc, getDoc, getDocs,
-  onSnapshot, query, orderBy, serverTimestamp, setDoc
+  getFirestore, collection, addDoc, doc, setDoc,
+  serverTimestamp, query, orderBy, onSnapshot, getDoc, getDocs
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
 import {
   getStorage, ref as storageRef, uploadBytes, getDownloadURL
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-storage.js";
 
-import { firebaseConfig } from "./firebase-config.js";
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
 // DOM
 const postsEl = document.getElementById("posts");
-const navListEl = document.getElementById("navList");
-const searchInput = document.getElementById("search");
-const openPostFormBtn = document.getElementById("openPostFormBtn");
+const navList = document.getElementById("navList");
+const openNewPost = document.getElementById("openNewPost");
 const postModal = document.getElementById("postModal");
-const closeModal = document.getElementById("closeModal");
-const cancelPost = document.getElementById("cancelPost");
+const closePostModal = document.getElementById("closePostModal");
 const postForm = document.getElementById("postForm");
-const titleInput = document.getElementById("title");
-const authorInput = document.getElementById("author");
-const contentInput = document.getElementById("content");
-const imageInput = document.getElementById("image");
-
-const postDetailModal = document.getElementById("postDetailModal");
-const postDetailEl = document.getElementById("postDetail");
+const searchInput = document.getElementById("search");
+const detailModal = document.getElementById("detailModal");
 const closeDetail = document.getElementById("closeDetail");
+const postDetail = document.getElementById("postDetail");
 const commentForm = document.getElementById("commentForm");
-const commentName = document.getElementById("commentName");
-const commentText = document.getElementById("commentText");
 const commentsList = document.getElementById("commentsList");
 
 let currentPostId = null;
 
-// Utility: show / hide modal
-function showModal(node){ node.classList.remove("hidden"); }
-function hideModal(node){ node.classList.add("hidden"); }
+const show = el => el.classList.remove("hidden");
+const hide = el => el.classList.add("hidden");
 
-// Open/close handlers
-if (openPostFormBtn) openPostFormBtn.addEventListener("click", ()=> { showModal(postModal); });
-if (closeModal) closeModal.addEventListener("click", ()=> hideModal(postModal));
-if (cancelPost) cancelPost.addEventListener("click", ()=> hideModal(postModal));
+/* -------- Seed initial 3 posts only once -------- */
+async function seedIfNeeded() {
+    const metaRef = doc(db, "meta", "seed_v1");
+    const snap = await getDoc(metaRef);
+    if (snap.exists()) return;
 
-// Seed sample posts ONCE (using a metadata doc)
-async function seedIfNeeded(){
-  const metaRef = doc(db, "meta", "seeded_v1");
-  const metaSnap = await getDoc(metaRef);
-  if (metaSnap.exists()) return; // already seeded
+    const samples = [
+        {
+            title: "AI in Healthcare",
+            author: "Naveen Raj",
+            content: "AI is transforming medical diagnosis, monitoring and early treatment predictions.",
+            imageUrl: ""
+        },
+        {
+            title: "Geo-Tagged Fish Logger",
+            author: "Naveen Raj",
+            content: "A full-stack web app for fishermen to log catches with real-time GPS + offline caching.",
+            imageUrl: ""
+        },
+        {
+            title: "Mental Health Analyzer",
+            author: "Naveen Raj",
+            content: "AI-powered psychological assessment based on mood patterns and behavioral changes.",
+            imageUrl: ""
+        }
+    ];
 
-  const samples = [
-    {
-      title: "AI in Healthcare — By Naveen Raj",
-      author: "Naveen Raj",
-      content: "AI in Healthcare transforms diagnosis, treatment prediction, and patient monitoring. My project focuses on early disease detection using ML and medical datasets.",
-    },
-    {
-      title: "Geo-Tagged Fish Logger — By Naveen Raj",
-      author: "Naveen Raj",
-      content: "A real-time fish catch logging app using GPS, Firebase, and offline caching. Helps fishermen store species, location, and catch details.",
-    },
-    {
-      title: "Mental Health Analyzer — By Naveen Raj",
-      author: "Naveen Raj",
-      content: "An AI-powered mental health screening tool that identifies stress, anxiety levels, and wellness insights using NLP and sentiment analysis.",
-    }
-  ];
+    const postsCol = collection(db, "posts");
+    for (const p of samples)
+        await addDoc(postsCol, { ...p, createdAt: serverTimestamp() });
 
-  const postsCol = collection(db, "posts");
-  for (const p of samples){
-    await addDoc(postsCol, {
-      ...p,
-      imageUrl: "",
-      createdAt: serverTimestamp()
-    });
-  }
-  await setDoc(metaRef, { seededAt: serverTimestamp() });
+    await setDoc(metaRef, { seededAt: serverTimestamp() });
 }
 
-// Real-time listener for posts (ordered newest first)
-function listenPostsRealtime(){
-  const postsCol = collection(db, "posts");
-  const q = query(postsCol, orderBy("createdAt", "desc"));
+/* -------- Render Posts -------- */
+function renderPosts(posts) {
+    postsEl.innerHTML = "";
+    const q = searchInput.value.toLowerCase();
 
-  onSnapshot(q, (snapshot) => {
-    const posts = [];
-    snapshot.forEach(docSnap => {
-      posts.push({ id: docSnap.id, ...docSnap.data() });
+    posts.forEach(p => {
+        // search filter
+        const hay = `${p.title} ${p.author} ${p.content}`.toLowerCase();
+        if (q && !hay.includes(q)) return;
+
+        const card = document.createElement("div");
+        card.className = "post-card";
+
+        card.innerHTML = `
+            <h2>${p.title}</h2>
+            <div class="post-meta">By ${p.author} — ${p.createdAt?.toDate().toLocaleString()}</div>
+            ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img">` : ""}
+            <p>${p.content.slice(0, 220)}...</p>
+            <button class="btn primary" data-id="${p.id}">Read More</button>
+        `;
+
+        card.querySelector("button").onclick = () => openDetail(p.id);
+        postsEl.appendChild(card);
     });
-    renderPosts(posts);
-    renderNav(posts);
-  }, (err)=> {
-    console.error("Realtime posts error:", err);
-  });
 }
 
-// Render posts list
-function renderPosts(posts){
-  postsEl.innerHTML = "";
-  if (!posts.length){
-    postsEl.innerHTML = "<p>No posts yet.</p>";
-    return;
-  }
+/* -------- Navigation -------- */
+function renderNav(posts) {
+    navList.innerHTML = "";
+    posts.forEach(p => {
+        const a = document.createElement("a");
+        a.textContent = p.title;
+        a.href = "#";
+        a.onclick = e => {
+            e.preventDefault();
+            openDetail(p.id);
+        };
+        navList.appendChild(a);
+    });
+}
 
-  const searchQ = (searchInput?.value || "").toLowerCase();
+/* -------- Listen to posts realtime -------- */
+function watchPostsRealtime() {
+    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+    onSnapshot(q, snapshot => {
+        const arr = [];
+        snapshot.forEach(doc => arr.push({ id: doc.id, ...doc.data() }));
+        renderPosts(arr);
+        renderNav(arr);
+    });
+}
 
-  for (const p of posts){
-    // client-side filter for search
-    if (searchQ){
-      const hay = `${p.title || ""} ${p.author || ""} ${p.content || ""}`.toLowerCase();
-      if (!hay.includes(searchQ)) continue;
+/* -------- Create new post -------- */
+postForm.addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const title = document.getElementById("title").value;
+    const author = document.getElementById("author").value;
+    const content = document.getElementById("content").value;
+    const imageFile = document.getElementById("image").files[0];
+
+    let imageUrl = "";
+
+    if (imageFile) {
+        const path = `post_images/${Date.now()}_${imageFile.name}`;
+        const storageRefPath = storageRef(storage, path);
+        await uploadBytes(storageRefPath, imageFile);
+        imageUrl = await getDownloadURL(storageRefPath);
     }
 
-    const card = document.createElement("div");
-    card.className = "post-card";
-    const dateStr = p.createdAt && p.createdAt.toDate ? p.createdAt.toDate().toLocaleString() : "";
+    await addDoc(collection(db, "posts"), {
+        title, author, content, imageUrl,
+        createdAt: serverTimestamp()
+    });
 
-    card.innerHTML = `
-      <h3>${escapeHtml(p.title)}</h3>
-      <div class="post-meta">By ${escapeHtml(p.author)} — ${dateStr}</div>
-      ${p.imageUrl ? `<div class="post-image"><img src="${p.imageUrl}" alt="${escapeHtml(p.title)}" /></div>` : ""}
-      <p>${escapeHtml(truncate(p.content || "", 280))}</p>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn openDetail" data-id="${p.id}">Read</button>
-      </div>
+    hide(postModal);
+    postForm.reset();
+});
+
+/* -------- Open Detail Modal -------- */
+async function openDetail(id) {
+    currentPostId = id;
+
+    const snap = await getDoc(doc(db, "posts", id));
+    if (!snap.exists()) return;
+
+    const p = snap.data();
+
+    postDetail.innerHTML = `
+        <h1>${p.title}</h1>
+        <div class="post-meta">By ${p.author} — ${p.createdAt?.toDate().toLocaleString()}</div>
+        ${p.imageUrl ? `<img src="${p.imageUrl}" class="post-img">` : ""}
+        <p>${p.content}</p>
     `;
-    postsEl.appendChild(card);
-  }
 
-  // wire read buttons
-  document.querySelectorAll(".openDetail").forEach(btn=>{
-    btn.addEventListener("click", (e)=>{
-      const id = e.currentTarget.dataset.id;
-      openPostDetail(id);
+    loadComments(id);
+    show(detailModal);
+}
+
+/* -------- Comments realtime -------- */
+function loadComments(postId) {
+    const cm = collection(db, "posts", postId, "comments");
+    const q = query(cm, orderBy("createdAt", "asc"));
+
+    onSnapshot(q, snap => {
+        commentsList.innerHTML = "";
+        snap.forEach(doc => {
+            const c = doc.data();
+            const li = document.createElement("li");
+            li.innerHTML = `<strong>${c.name}</strong><br>${c.text}`;
+            commentsList.appendChild(li);
+        });
     });
-  });
 }
 
-// Render nav list of post titles
-function renderNav(posts){
-  navListEl.innerHTML = "";
-  posts.forEach(p=>{
-    const a = document.createElement("a");
-    a.href = "#";
-    a.className = "nav-link";
-    a.textContent = p.title;
-    a.onclick = (ev)=>{ ev.preventDefault(); openPostDetail(p.id); };
-    navListEl.appendChild(a);
-  });
-}
+/* -------- Add new comment -------- */
+commentForm.addEventListener("submit", async e => {
+    e.preventDefault();
 
-// Open single post detail and listen for comments
-async function openPostDetail(id){
-  currentPostId = id;
-  const docRef = doc(db, "posts", id);
-  const docSnap = await getDoc(docRef);
-  if (!docSnap.exists()){
-    alert("Post not found.");
-    return;
-  }
-  const data = docSnap.data();
-  const dateStr = data.createdAt && data.createdAt.toDate ? data.createdAt.toDate().toLocaleString() : "";
-  postDetailEl.innerHTML = `
-    <h2>${escapeHtml(data.title)}</h2>
-    <div class="post-meta">By ${escapeHtml(data.author)} — ${dateStr}</div>
-    ${data.imageUrl ? `<div class="post-image"><img src="${data.imageUrl}" alt="${escapeHtml(data.title)}" /></div>`: ""}
-    <div><p>${escapeHtml(data.content)}</p></div>
-  `;
-  showModal(postDetailModal);
+    const name = document.getElementById("commentName").value;
+    const text = document.getElementById("commentText").value;
 
-  // realtime comments subcollection
-  const commentsCol = collection(db, "posts", id, "comments");
-  const cQuery = query(commentsCol, orderBy("createdAt", "asc"));
-  onSnapshot(cQuery, (snap)=>{
-    commentsList.innerHTML = "";
-    snap.forEach(sdoc=>{
-      const c = sdoc.data();
-      const li = document.createElement("li");
-      const when = c.createdAt && c.createdAt.toDate ? c.createdAt.toDate().toLocaleString() : "";
-      li.innerHTML = `<strong>${escapeHtml(c.name)}</strong> — <small>${when}</small><div>${escapeHtml(c.text)}</div>`;
-      commentsList.appendChild(li);
+    await addDoc(collection(db, "posts", currentPostId, "comments"), {
+        name, text, createdAt: serverTimestamp()
     });
-  });
-}
 
-// Comment submit
-if (commentForm) commentForm.addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  if (!currentPostId) return alert("No post selected");
-  const name = (commentName.value || "").trim() || "Anonymous";
-  const text = (commentText.value || "").trim();
-  if (!text) return;
-  const commentsCol = collection(db, "posts", currentPostId, "comments");
-  await addDoc(commentsCol, { name, text, createdAt: serverTimestamp() });
-  commentForm.reset();
+    commentForm.reset();
 });
 
-// Close detail
-if (closeDetail) closeDetail.addEventListener("click", ()=> {
-  hideModal(postDetailModal);
-  currentPostId = null;
-  commentsList.innerHTML = "";
-});
+/* -------- UI Modal Controls -------- */
+openNewPost.onclick = () => show(postModal);
+closePostModal.onclick = () => hide(postModal);
+closeDetail.onclick = () => hide(detailModal);
 
-// Submit new post
-if (postForm) postForm.addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  const title = (titleInput.value || "").trim();
-  const author = (authorInput.value || "").trim() || "Anonymous";
-  const content = (contentInput.value || "").trim();
-  if (!title || !content) return alert("Provide title and content");
-
-  // optional image upload
-  let imageUrl = "";
-  if (imageInput?.files && imageInput.files[0]){
-    const file = imageInput.files[0];
-    const storagePath = `post_images/${Date.now()}_${file.name}`;
-    const sRef = storageRef(storage, storagePath);
-    await uploadBytes(sRef, file);
-    imageUrl = await getDownloadURL(sRef);
-  }
-
-  const postsCol = collection(db, "posts");
-  await addDoc(postsCol, {
-    title, author, content, imageUrl,
-    createdAt: serverTimestamp()
-  });
-
-  postForm.reset();
-  hideModal(postModal);
-  alert("Post published — visible to everyone.");
-});
-
-// Search input
-if (searchInput) searchInput.addEventListener("input", ()=>{
-  // renderPosts reads searchInput value; snapshot already updates UI so nothing else required.
-});
-
-// Helpers
-function truncate(s, n){ s = s || ""; return s.length>n ? s.slice(0,n)+"..." : s; }
-function escapeHtml(unsafe){
-  if (unsafe === null || unsafe === undefined) return "";
-  return String(unsafe)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-// Start
-(async function(){
-  try{
-    await seedIfNeeded();
-  }catch(e){ console.warn("Seeding skipped or failed:", e); }
-
-  // start real-time listener
-  listenPostsRealtime();
-
-  // wire UI close: ensure search re-renders current list once
-  const si = document.getElementById("search");
-  if (si) si.addEventListener("input", ()=> {
-    (async ()=>{
-      const postsCol = collection(db, "posts");
-      const snap = await getDocs(query(postsCol, orderBy("createdAt","desc")));
-      const arr = [];
-      snap.forEach(d=> arr.push({id:d.id,...d.data()}));
-      renderPosts(arr);
-      renderNav(arr);
-    })();
-  });
-
-})();
+/* -------- Start App -------- */
+await seedIfNeeded();
+watchPostsRealtime();
